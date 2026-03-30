@@ -1,214 +1,234 @@
-const messages = document.getElementById('messages');
-const input = document.getElementById('input');
+    const messagesEl = document.getElementById('messages');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('user-input');
+    const clearBtn = document.getElementById('clear-chat');
+    const chips = document.querySelectorAll('.chip');
 
-/* 🧠 Session memory (not saved) */
-let memory = [];
+    const comfortingReplies = [
+      'I am here with you. You do not have to organize everything perfectly before you say it.',
+      'You can let it out here. I will stay with your words for this moment.',
+      'That sounds heavy. Thank you for trusting me with it.',
+      'You do not need to hide your feelings here. You can be honest.',
+      'Take your time. There is no rush to make your feelings neat or simple.'
+    ];
 
-/* 🔤 Normalize */
-function normalize(text) {
-  return text.toLowerCase().trim();
-}
+    const reflectionPrompts = [
+      'Do you want to tell me what happened first, or how it made you feel?',
+      'What part of this feels the heaviest right now?',
+      'If your mind is crowded, start with just one sentence. I am listening.',
+      'What do you wish someone understood about this?',
+      'Would it help to vent freely, or would you rather sort things out step by step?'
+    ];
 
-/* 🎲 Random helper */
-function randomItem(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+    const groundingTips = [
+      'Try this: unclench your jaw, drop your shoulders, and take one slow breath in and out.',
+      'Name 3 things you can see, 2 things you can feel, and 1 thing you can hear.',
+      'Put both feet on the floor for a moment. You are here right now, not inside every thought at once.',
+      'Drink a little water and give yourself one quiet minute before deciding what to do next.'
+    ];
 
-/* 💬 Response sets */
-const comfortingReplies = [
-  'I am here with you. You do not have to organize everything perfectly before you say it.',
-  'You can let it out here. I will stay with your words for this moment.',
-  'That sounds heavy. Thank you for trusting me with it.',
-  'You do not need to hide your feelings here. You can be honest.',
-  'Take your time. There is no rush to make your feelings neat or simple.'
-];
+    const encouragement = [
+      'You are carrying a lot, and you are still here. That matters.',
+      'Your feelings are real, even if they are hard to explain.',
+      'You do not have to solve everything tonight. It is enough to be honest about what hurts.',
+      'Being overwhelmed does not mean you are weak. It means something important feels heavy.'
+    ];
 
-const reflectionPrompts = [
-  'Do you want to tell me what happened first, or how it made you feel?',
-  'What part of this feels the heaviest right now?',
-  'If your mind is crowded, start with just one sentence. I am listening.',
-  'What do you wish someone understood about this?',
-  'Would it help to vent freely, or would you rather sort things out step by step?'
-];
+    const dictionary = {
+      spanish: {
+        hello: 'hola',
+        goodbye: 'adios',
+        thankyou: 'gracias',
+        please: 'por favor',
+        yes: 'si',
+        no: 'no',
+        friend: 'amigo/amiga'
+      },
+      french: {
+        hello: 'bonjour',
+        goodbye: 'au revoir',
+        thankyou: 'merci',
+        please: 's\'il vous plait',
+        yes: 'oui',
+        no: 'non',
+        friend: 'ami/amie'
+      },
+      german: {
+        hello: 'hallo',
+        goodbye: 'auf wiedersehen',
+        thankyou: 'danke',
+        please: 'bitte',
+        yes: 'ja',
+        no: 'nein',
+        friend: 'freund/freundin'
+      }
+    };
 
-const groundingTips = [
-  'Try this: unclench your jaw, drop your shoulders, and take one slow breath in and out.',
-  'Name 3 things you can see, 2 things you can feel, and 1 thing you can hear.',
-  'Put both feet on the floor for a moment. You are here right now, not inside every thought at once.',
-  'Drink a little water and give yourself one quiet minute before deciding what to do next.'
-];
+    function scrollToBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
 
-const encouragement = [
-  'You are carrying a lot, and you are still here. That matters.',
-  'Your feelings are real, even if they are hard to explain.',
-  'You do not have to solve everything tonight. It is enough to be honest about what hurts.',
-  'Being overwhelmed does not mean you are weak. It means something important feels heavy.'
-];
+    function autoResize() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+    }
 
-/* 🌍 Translation dictionary */
-const dictionary = {
-  spanish: {
-    hello: 'hola',
-    goodbye: 'adios',
-    thankyou: 'gracias',
-    please: 'por favor',
-    yes: 'si',
-    no: 'no',
-    friend: 'amigo/amiga'
-  },
-  french: {
-    hello: 'bonjour',
-    goodbye: 'au revoir',
-    thankyou: 'merci',
-    please: 's\'il vous plait',
-    yes: 'oui',
-    no: 'non',
-    friend: 'ami/amie'
-  },
-  german: {
-    hello: 'hallo',
-    goodbye: 'auf wiedersehen',
-    thankyou: 'danke',
-    please: 'bitte',
-    yes: 'ja',
-    no: 'nein',
-    friend: 'freund/freundin'
-  }
-};
+    function addMessage(sender, text) {
+      const message = document.createElement('div');
+      message.className = `message ${sender}`;
 
-/* 🔍 Emotion detection */
-function detectEmotion(text) {
-  if (/sad|cry|hurt|lonely|depressed/.test(text)) return "sad";
-  if (/anxious|stress|overwhelmed|panic/.test(text)) return "anxious";
-  if (/angry|mad|frustrated|annoyed/.test(text)) return "angry";
-  if (/tired|exhausted|burnt/.test(text)) return "tired";
-  return "default";
-}
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;
 
-/* 🌍 Translation handler */
-function handleTranslation(text) {
-  const match = text.match(/translate (.+?) to (spanish|french|german)/i);
-  if (!match) return null;
+      message.appendChild(bubble);
+      messagesEl.appendChild(message);
+      scrollToBottom();
+    }
 
-  const word = match[1].toLowerCase().replace(/\s/g, '');
-  const lang = match[2].toLowerCase();
+    function loadChat() {
+      addMessage('bot', 'Welcome to Alice’s Wonderland: Your Private Diary. This is your personal diary bot. Feel free to explore your emotions and thoughts openly — you will not be judged. The chat is intentionally not saved.');
+      scrollToBottom();
+    }
 
-  const result = dictionary[lang][word];
+    function showTyping() {
+      const typing = document.createElement('div');
+      typing.className = 'message bot';
+      typing.id = 'typing-indicator';
+      typing.innerHTML = `
+        <div class="bubble">
+          <span class="typing" aria-label="Bot is typing">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </span>
+        </div>
+      `;
+      messagesEl.appendChild(typing);
+      scrollToBottom();
+    }
 
-  if (result) {
-    return `In ${lang}, "${match[1]}" is "${result}".`;
-  }
+    function hideTyping() {
+      const typing = document.getElementById('typing-indicator');
+      if (typing) typing.remove();
+    }
 
-  return `I only know a few words. Try: hello, goodbye, thank you, please.`;
-}
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
 
-/* 🤖 Reply generator */
-function getReply(userText) {
-  const text = normalize(userText);
+    function normalize(text) {
+      return text.toLowerCase().trim().replace(/\s+/g, ' ');
+    }
 
-  /* Translation first */
-  const translation = handleTranslation(userText);
-  if (translation) return translation;
+    function handleTranslation(text) {
+      const match = text.match(/translate\s+(.+?)\s+to\s+(spanish|french|german)/i);
+      if (!match) return null;
+      const phrase = match[1].toLowerCase().trim().replace(/\s+/g, '');
+      const language = match[2].toLowerCase();
+      const translated = dictionary[language][phrase];
+      if (translated) {
+        return `In ${language}, "${match[1].trim()}" is "${translated}."`;
+      }
+      return `I know a small built-in dictionary. Try translating one of these words to ${language}: hello, goodbye, thank you, please, yes, no, friend.`;
+    }
 
-  const emotion = detectEmotion(text);
+    function getBotReply(userText) {
+      const text = normalize(userText);
+      const translated = handleTranslation(userText);
+      if (translated) return translated;
 
-  let reply = randomItem(comfortingReplies);
+      if (/\b(hi|hello|hey)\b/.test(text)) {
+        return 'Hi. I am here with you. You can vent, ramble, reflect, or sit quietly and type whatever is on your mind.';
+      }
 
-  if (emotion === "anxious") {
-    reply += " " + randomItem(groundingTips);
-  }
+      if (/\b(can you just listen|just listen|listen to me)\b/.test(text)) {
+        return 'Yes. I am listening. You do not need to make it polished — just say it as it comes.';
+      }
 
-  if (emotion === "sad") {
-    reply += " " + randomItem(encouragement);
-  }
+      if (/\b(i need to vent|let me vent|i want to vent)\b/.test(text)) {
+        return randomItem(reflectionPrompts);
+      }
 
-  if (emotion === "angry") {
-    return "That frustration deserves space. You can say the uncensored version here. What happened?";
-  }
+      if (/\b(overwhelmed|stressed|anxious|panic|too much)\b/.test(text)) {
+        return `${randomItem(comfortingReplies)} ${randomItem(groundingTips)}`;
+      }
 
-  if (emotion === "tired") {
-    reply += " You sound tired. It might be okay to rest a little.";
-  }
+      if (/\b(sad|upset|hurt|crying|lonely|empty|depressed)\b/.test(text)) {
+        return `${randomItem(comfortingReplies)} ${randomItem(encouragement)}`;
+      }
 
-  /* Reflection prompt */
-  if (Math.random() > 0.5) {
-    reply += " " + randomItem(reflectionPrompts);
-  }
+      if (/\b(angry|mad|frustrated|annoyed)\b/.test(text)) {
+        return 'That frustration deserves space too. You can say the uncensored version here. What happened?';
+      }
 
-  /* Memory reference */
-  if (memory.length > 1 && Math.random() > 0.6) {
-    reply += " Earlier, you mentioned something similar. Do you think they are connected?";
-  }
+      if (/\b(confused|lost|stuck|unsure)\b/.test(text)) {
+        return 'We can slow it down together. What feels most unclear right now — the situation, your feelings, or what to do next?';
+      }
 
-  return reply;
-}
+      if (/help me sort out my thoughts|sort out my thoughts|process this/.test(text)) {
+        return 'Okay. Start with these three pieces: what happened, what you felt, and what you needed but did not get.';
+      }
 
-/* 💬 Typing animation */
-function showTyping() {
-  const typing = document.createElement('div');
-  typing.className = 'message bot';
-  typing.id = 'typing-indicator';
+      if (/say something comforting|comfort me|reassure me/.test(text)) {
+        return `${randomItem(comfortingReplies)} ${randomItem(encouragement)}`;
+      }
 
-  typing.innerHTML = `
-    <div class="bubble">
-      <span class="typing">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </span>
-    </div>
-  `;
+      if (/\b(thank you|thanks)\b/.test(text)) {
+        return 'You do not have to thank me. I am glad you let some of it out.';
+      }
 
-  messages.appendChild(typing);
-  messages.scrollTop = messages.scrollHeight;
-}
+      if (/\b(bye|goodbye|see you)\b/.test(text)) {
+        return 'I will be here whenever you need a place to let things out.';
+      }
 
-function hideTyping() {
-  const typing = document.getElementById('typing-indicator');
-  if (typing) typing.remove();
-}
+      if (/\b(help|what can you do)\b/.test(text)) {
+        return 'You can vent, reflect, ask for comfort, sort through feelings, or use me like a private diary space. I also support a small built-in translation feature.';
+      }
 
-/* 📤 Send message */
-function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
+      return `${randomItem(comfortingReplies)} ${randomItem(reflectionPrompts)}`;
+    }
 
-  addMessage('user', text);
-  memory.push(text);
-  input.value = '';
+    function submitMessage(text) {
+      if (!text.trim()) return;
+      addMessage('user', text.trim());
+      input.value = '';
+      autoResize();
+      showTyping();
 
-  showTyping();
+      setTimeout(() => {
+        hideTyping();
+        const reply = getBotReply(text);
+        addMessage('bot', reply);
+      }, 550);
+    }
 
-  setTimeout(() => {
-    hideTyping();
-    const reply = getReply(text);
-    addMessage('bot', reply);
-  }, 800);
-}
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      submitMessage(input.value);
+    });
 
-/* 🧱 Render message */
-function addMessage(sender, text) {
-  const div = document.createElement('div');
-  div.className = 'message ' + sender;
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        submitMessage(input.value);
+      }
+    });
 
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble';
-  bubble.textContent = text;
+    input.addEventListener('input', autoResize);
 
-  div.appendChild(bubble);
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-}
+    clearBtn.addEventListener('click', () => {
+      messagesEl.innerHTML = '';
+      addMessage('bot', 'This space has been cleared. Nothing was kept. You can begin again whenever you want.');
+    });
 
-/* ⌨️ Enter key support */
-input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        input.value = chip.textContent;
+        autoResize();
+        submitMessage(input.value);
+      });
+    });
 
-/* 🌟 Initial message */
-addMessage('bot',
-  "Welcome to Alice’s Wonderland. This is your space to think, feel, and let things out. I’m here with you."
-);
+    loadChat();
+    autoResize();
