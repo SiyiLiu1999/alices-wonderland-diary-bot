@@ -52,7 +52,25 @@ const virtualHugs = [
   'Sending you a quiet hug. You can rest in this moment for a bit.'
 ];
 
-// ---------- Emotion Logic ----------
+// ---------- Memory ----------
+let conversationMemory = [];
+const MEMORY_LIMIT = 5;
+
+function updateMemory(userText, emotions) {
+  conversationMemory.push({ text: userText, emotions });
+
+  if (conversationMemory.length > MEMORY_LIMIT) {
+    conversationMemory.shift();
+  }
+}
+
+function detectEmotionTrend(emotions) {
+  let recent = conversationMemory.flatMap(m => m.emotions);
+
+  return emotions.find(e => recent.filter(x => x === e).length >= 2) || null;
+}
+
+// ---------- Emotion Detection ----------
 function detectEmotion(text) {
   const t = text.toLowerCase();
 
@@ -67,6 +85,7 @@ function detectEmotion(text) {
   };
 
   let detected = [];
+
   for (let emotion in emotions) {
     if (emotions[emotion].test(t)) detected.push(emotion);
   }
@@ -77,13 +96,8 @@ function detectEmotion(text) {
 function detectIntensity(text) {
   const t = text.toLowerCase();
 
-  if (/\b(very|so much|extremely|really|too much|can't|unbearable)\b/.test(t)) {
-    return 'high';
-  }
-
-  if (/\b(a bit|kind of|slightly|maybe)\b/.test(t)) {
-    return 'low';
-  }
+  if (/\b(very|so much|extremely|really|too much|can't|unbearable)\b/.test(t)) return 'high';
+  if (/\b(a bit|kind of|slightly|maybe)\b/.test(t)) return 'low';
 
   return 'medium';
 }
@@ -95,7 +109,6 @@ function maybeAddHug(emotions) {
   if (hasVulnerable && Math.random() < 0.4) {
     return ' ' + randomItem(virtualHugs);
   }
-
   return '';
 }
 
@@ -173,7 +186,7 @@ function resetInactivityState() {
   startInactivityTimer();
 }
 
-// ---------- UI Functions ----------
+// ---------- UI ----------
 function scrollToBottom() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -250,7 +263,16 @@ function getBotReply(userText) {
   const emotions = detectEmotion(text);
   const intensity = detectIntensity(text);
 
-  return buildEmpatheticReply(emotions, intensity);
+  updateMemory(userText, emotions);
+  const trend = detectEmotionTrend(emotions);
+
+  let reply = buildEmpatheticReply(emotions, intensity);
+
+  if (trend) {
+    reply = "It seems this feeling has been staying with you for a bit. " + reply;
+  }
+
+  return reply;
 }
 
 // ---------- Events ----------
@@ -291,6 +313,7 @@ input.addEventListener('input', () => {
 
 clearBtn.addEventListener('click', () => {
   messagesEl.innerHTML = '';
+  conversationMemory = [];
   addMessage('bot', 'This space has been cleared. Nothing was kept. You can begin again whenever you want.');
 });
 
