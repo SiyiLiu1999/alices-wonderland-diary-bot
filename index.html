@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- 🎵 Background Music -->
+  <audio id="bg-music" loop>
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+
   <main class="app" aria-label="Imaginary friend diary chatbot application">
     <aside class="sidebar">
       <div class="brand">
@@ -15,6 +21,11 @@
           <p>Your private diary bot for venting, reflection, comfort, and wonder</p>
         </div>
       </div>
+
+      <!-- 🎵 Music Toggle Button -->
+      <section class="card">
+        <button id="music-toggle" type="button">🔊 Music</button>
+      </section>
 
       <section class="card" aria-labelledby="about-title">
         <h2 id="about-title">Down the rabbit hole</h2>
@@ -69,7 +80,7 @@
       </div>
     </section>
   </main>
+
 <script src="script.js"></script>
 </body>
 </html>
-
