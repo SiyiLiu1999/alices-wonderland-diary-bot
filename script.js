@@ -4,6 +4,32 @@ const input = document.getElementById('user-input');
 const clearBtn = document.getElementById('clear-chat');
 const chips = document.querySelectorAll('.chip');
 
+// 🎵 Music عناصر
+const bgMusic = document.getElementById('bg-music');
+const musicToggle = document.getElementById('music-toggle');
+
+// ---------- Music Logic ----------
+function startMusic() {
+  if (!bgMusic) return;
+  bgMusic.volume = 0.3;
+  bgMusic.play().catch(() => {});
+}
+
+document.addEventListener('click', startMusic, { once: true });
+document.addEventListener('keydown', startMusic, { once: true });
+
+if (musicToggle) {
+  musicToggle.addEventListener('click', () => {
+    if (bgMusic.paused) {
+      bgMusic.play();
+      musicToggle.textContent = '🔊 Music';
+    } else {
+      bgMusic.pause();
+      musicToggle.textContent = '🔇 Muted';
+    }
+  });
+}
+
 // ---------- Response Banks ----------
 const comfortingReplies = [
   'I am here with you. You do not have to organize everything perfectly before you say it.',
@@ -58,7 +84,6 @@ const MEMORY_LIMIT = 5;
 
 function updateMemory(userText, emotions) {
   conversationMemory.push({ text: userText, emotions });
-
   if (conversationMemory.length > MEMORY_LIMIT) {
     conversationMemory.shift();
   }
@@ -66,7 +91,6 @@ function updateMemory(userText, emotions) {
 
 function detectEmotionTrend(emotions) {
   let recent = conversationMemory.flatMap(m => m.emotions);
-
   return emotions.find(e => recent.filter(x => x === e).length >= 2) || null;
 }
 
@@ -85,7 +109,6 @@ function detectEmotion(text) {
   };
 
   let detected = [];
-
   for (let emotion in emotions) {
     if (emotions[emotion].test(t)) detected.push(emotion);
   }
